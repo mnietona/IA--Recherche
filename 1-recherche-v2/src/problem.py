@@ -40,49 +40,15 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
     
     def is_goal_state(self, state: WorldState) -> bool:
         # Vérifier si tous les agents sont dans une position de sortie
-        for agent_pos in state.agents_positions:
-            if agent_pos not in self.world.exit_pos:
-                return False
         return True
 
     def get_successors(self, state: WorldState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
         self.nodes_expanded += 1
-
-        # Définir l'état actuel du monde
-        self.world.set_state(state)
-
-        # Si le monde est terminé, ne génère pas de successeurs
-        if self.world.done:
-            return
-
-        # Obtenir toutes les actions disponibles pour chaque agent
-        available_actions = self.world.available_actions()
-
-        # Générer toutes les combinaisons possibles d'actions pour tous les agents
-        for joint_action in product(*available_actions):
-            # Sauvegarder l'état actuel pour le restaurer après avoir effectué les actions
-            current_state = self.world.get_state()
-
-            # Appliquer les actions et obtenir la récompense
-            reward = self.world.step(list(joint_action))
-
-            # Obtenir le nouvel état après avoir effectué les actions
-            new_state = self.world.get_state()
-
-            # Restaurer l'état initial du monde
-            self.world.set_state(current_state)
-
-            # Si le monde n'est pas terminé, renvoyer le nouvel état, les actions et la récompense négative (car nous voulons minimiser le coût)
-            if not self.world.done:
-                yield new_state, joint_action, -reward
+        return []
 
     def heuristic(self, state: WorldState) -> float:
         """Manhattan distance for each agent to its goal"""
-        total_distance = 0
-        for agent_pos in state.agents_positions:
-            distances = [abs(agent_pos[0] - exit[0]) + abs(agent_pos[1] - exit[1]) for exit in self.world.exit_pos]
-            total_distance += min(distances)
-        return total_distance
+        return 0.0
 
 
 class CornerProblemState:

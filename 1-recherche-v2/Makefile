@@ -11,3 +11,5 @@ t:
 	#pytest tests/test_corner_search.py -v 
 	#pytest tests/test_gem_search.py -v 
 	
+clean:
+	find . -name "__pycache__" -exec rm -rf {} \;
