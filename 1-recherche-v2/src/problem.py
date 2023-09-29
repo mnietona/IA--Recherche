@@ -22,7 +22,7 @@ class SearchProblem(ABC, Generic[T]):
     @abstractmethod
     def is_goal_state(self, problem_state: T) -> bool:
         """Whether the given state is the goal state"""
-        
+
     @abstractmethod
     def get_successors(self, state: T) -> Iterable[Tuple[T, Tuple[Action, ...], float]]:
         """
@@ -37,19 +37,44 @@ class SearchProblem(ABC, Generic[T]):
         return 0.0
 
 class SimpleSearchProblem(SearchProblem[WorldState]):
-    
+
     def is_goal_state(self, state: WorldState) -> bool:
         # Vérifier si tous les agents sont dans une position de sortie
+        for agent_pos in state.agents_positions:
+            if agent_pos not in self.world.exit_pos:
+                return False
         return True
 
     def get_successors(self, state: WorldState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
         self.nodes_expanded += 1
-        return []
+        self.world.set_state(state)
+
+        if self.world.done:
+            return
+
+        available_actions_per_agent = self.world.available_actions()
+        visited_states = set()
+
+        for joint_actions in product(*available_actions_per_agent):
+            previous_state = self.world.get_state()
+            reward = self.world.step(joint_actions)
+            new_state = self.world.get_state()
+
+            if new_state in visited_states:
+                continue
+
+            visited_states.add(new_state)
+            self.world.set_state(previous_state)
+            action_cost = -reward
+            yield new_state, joint_actions, action_cost
+
+
+
+
 
     def heuristic(self, state: WorldState) -> float:
         """Manhattan distance for each agent to its goal"""
         return 0.0
-
 
 class CornerProblemState:
     ...
