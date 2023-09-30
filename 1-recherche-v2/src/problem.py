@@ -45,36 +45,73 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
                 return False
         return True
 
+
     def get_successors(self, state: WorldState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
         self.nodes_expanded += 1
+
+        # Sauvegardons l'état courant du monde pour le restaurer plus tard
+        current_state = self.world.get_state()
+
+        # Mettons le monde à l'état que nous examinons
         self.world.set_state(state)
 
-        if self.world.done:
-            return
+        # Générer toutes les combinaisons possibles d'actions pour tous les agents
+        all_actions_combinations = product(*self.world.available_actions())
 
-        available_actions_per_agent = self.world.available_actions()
         visited_states = set()
 
-        for joint_actions in product(*available_actions_per_agent):
-            previous_state = self.world.get_state()
-            reward = self.world.step(joint_actions)
-            new_state = self.world.get_state()
+        for actions in all_actions_combinations:
+            if not self.world.done:
+                self.world.step(actions)
+                # Une fois que vous avez effectué l'action, capturez le nouvel état du monde
+                new_state = self.world.get_state()
+                # Ajoutez le nouvel état, l'action et le coût à vos successeurs
+                if new_state not in visited_states:
+                    visited_states.add(new_state)
+                    yield (new_state, actions, 1.0)  # J'ai utilisé un coût fixe de 1.0, mais vous pouvez le changer selon vos besoins.
+                # Restaurer le monde à l'état précédent pour tester la prochaine action
+                self.world.set_state(state)
 
-            if new_state in visited_states:
-                continue
-
-            visited_states.add(new_state)
-            self.world.set_state(previous_state)
-            action_cost = -reward
-            yield new_state, joint_actions, action_cost
+        # Restaurer l'état original du monde une fois que nous avons terminé
+        self.world.set_state(current_state)
 
 
 
 
 
+
+    # def heuristic(self, state: WorldState) -> float:
+    #     """Manhattan distance for each agent to its goal"""
+    
+    #     pos_agents = state.agents_positions
+    #     pos_goals = self.world.exit_pos.copy()  # Copie pour ne pas modifier la liste originale
+        
+    #     total_distance = 0
+        
+    #     for agent_position in pos_agents:
+    #         # Calcule la distance de Manhattan à toutes les sorties pour cet agent
+    #         distances = [abs(x1 - x2) + abs(y1 - y2) for x1, y1 in [agent_position] for x2, y2 in pos_goals]
+            
+    #         # Trouve la sortie la plus proche et ajouter sa distance à la distance totale
+    #         nearest_exit_distance = min(distances)
+    #         total_distance += nearest_exit_distance
+            
+    #         # Enleve cette sortie de la liste pour qu'elle ne soit pas considérée pour les autres agents
+    #         nearest_exit_index = distances.index(nearest_exit_distance)
+    #         del pos_goals[nearest_exit_index]
+
+    #     return total_distance
+    
     def heuristic(self, state: WorldState) -> float:
         """Manhattan distance for each agent to its goal"""
-        return 0.0
+        total_distance = 0
+        for agent_pos in state.agents_positions:
+            distances = [abs(agent_pos[0] - exit[0]) + abs(agent_pos[1] - exit[1]) for exit in self.world.exit_pos]
+            total_distance += min(distances)
+        return total_distance
+
+
+
 
 class CornerProblemState:
     ...

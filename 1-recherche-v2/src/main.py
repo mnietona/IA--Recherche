@@ -7,13 +7,17 @@ liste_carte = ["cartes/1_agent/vide","cartes/1_agent/zigzag",
                "cartes/2_agents/zigzag","cartes/2_agents/impossible",
                "level3", "level4", "level5", "level6", "cartes/corners","cartes/gems"]
 
-w = World.from_file(liste_carte[6])
+w = World.from_file("level3")
 
 problem = SimpleSearchProblem(w)
+
+img = w.get_image()
+
 #problem = CornerSearchProblem(w)
-solution = search.bfs(problem)
-#solution = search.dfs(problem)
+#solution = search.bfs(problem)
+solution = search.dfs(problem)
 #solution = search.astar(problem)
+
 
 if solution is None:
     print("No solution found")

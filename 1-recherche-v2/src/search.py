@@ -26,7 +26,7 @@ def bfs(problem: SearchProblem) -> Optional[Solution]:
     path_to = {start_state: []}
 
     while frontier:
-        current_state = frontier.popleft()
+        current_state = frontier.popleft() # on prend le premier élément de la frontière
         frontier_set.remove(current_state) # on enlève l'état de la frontière
         
         if problem.is_goal_state(current_state):
@@ -42,9 +42,11 @@ def bfs(problem: SearchProblem) -> Optional[Solution]:
     return None
 
 
+
+
 def dfs(problem: SearchProblem) -> Optional[Solution]:
     start_state = problem.initial_state
-    frontier = [start_state]
+    frontier = [start_state] 
     explored = set()
     path_to = {start_state: []}
 
@@ -65,8 +67,28 @@ def dfs(problem: SearchProblem) -> Optional[Solution]:
 
 
 
-import heapq
 
 def astar(problem: SearchProblem) -> Optional[Solution]:
-    
-    return None
+    start_state = problem.initial_state
+    frontier = PriorityQueue()  # La frontière est maintenant une file de priorité
+    frontier.push(start_state, 0)  # On initialise avec un coût de 0
+
+    path_to = {start_state: []}
+    cost_so_far = {start_state: 0}
+
+    while not frontier.isEmpty():
+        current_state = frontier.pop()
+
+        # Si l'état actuel est l'objectif, retournez la solution
+        if problem.is_goal_state(current_state):
+            return Solution(actions=path_to[current_state])
+
+        for successor, actions, action_cost in problem.get_successors(current_state):
+            new_cost = cost_so_far[current_state] + action_cost
+            if successor not in cost_so_far or new_cost < cost_so_far[successor]:
+                cost_so_far[successor] = new_cost
+                priority = new_cost + problem.heuristic(successor)
+                frontier.push(successor, priority)
+                path_to[successor] = path_to[current_state] + [actions]
+
+    return None 
