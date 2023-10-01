@@ -1,16 +1,13 @@
 import cv2
 from lle import World
-from problem import SimpleSearchProblem, CornerSearchProblem
+from problem import SimpleSearchProblem, CornerSearchProblem, GemSearchProblem
 import search
-liste_carte = ["cartes/1_agent/vide","cartes/1_agent/zigzag",
-               "cartes/1_agent/impossible","cartes/2_agents/vide",
-               "cartes/2_agents/zigzag","cartes/2_agents/impossible",
-               "level3", "level4", "level5", "level6", "cartes/corners","cartes/gems"]
 
-w = World.from_file("cartes/corners")
+w = World.from_file("level3")
 
 #problem = SimpleSearchProblem(w)
 problem = CornerSearchProblem(w)
+#problem = GemSearchProblem(w)
 #solution = search.bfs(problem)
 #solution = search.dfs(problem)
 solution = search.astar(problem)

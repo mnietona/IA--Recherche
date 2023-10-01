@@ -48,17 +48,17 @@ def dfs(problem: SearchProblem) -> Optional[Solution]:
     start_state = problem.initial_state
     frontier = [start_state] 
     explored = set()
-    path_to = {start_state: []}
+    path_to = {start_state: []} # stock le chemin vers un état
 
     while frontier:
-        current_state = frontier.pop()  # Différence majeure ici: nous prenons le dernier élément
+        current_state = frontier.pop()  # prend le dernier élément
         
         if problem.is_goal_state(current_state):
             return Solution(actions=path_to[current_state])
         
         explored.add(current_state)
 
-        for successor, actions, _ in problem.get_successors(current_state):
+        for successor, actions, _ in problem.get_successors(current_state): # on parcourt les successeurs
             if successor not in explored and successor not in frontier:
                 frontier.append(successor)
                 path_to[successor] = path_to[current_state] + [actions]
@@ -92,3 +92,5 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
                 path_to[successor] = path_to[current_state] + [actions]
 
     return None 
+
+

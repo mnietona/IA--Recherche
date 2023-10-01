@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Iterable, Generic, TypeVar, Set
+from typing import Tuple, Iterable, Generic, TypeVar, Set, List
 from lle import World, Action, WorldState
 from itertools import product
+from math import sqrt
 
 T = TypeVar("T")
 
@@ -48,31 +49,21 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
 
     def get_successors(self, state: WorldState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
         self.nodes_expanded += 1
-
-        # Sauvegardons l'état courant du monde pour le restaurer plus tard
         current_state = self.world.get_state()
-
-        # Mettons le monde à l'état que nous examinons
         self.world.set_state(state)
-
-        # Générer toutes les combinaisons possibles d'actions pour tous les agents
         all_actions_combinations = product(*self.world.available_actions())
-
         visited_states = set()
 
         for actions in all_actions_combinations:
             if not self.world.done:
                 self.world.step(actions)
-                # Une fois que vous avez effectué l'action, capturez le nouvel état du monde
                 new_state = self.world.get_state()
-                # Ajoutez le nouvel état, l'action et le coût à vos successeurs
                 if new_state not in visited_states:
                     visited_states.add(new_state)
-                    yield (new_state, actions, 1.0)  # J'ai utilisé un coût fixe de 1.0, mais vous pouvez le changer selon vos besoins.
-                # Restaurer le monde à l'état précédent pour tester la prochaine action
+                    yield (new_state, actions, 1.0)  
                 self.world.set_state(state)
 
-        # Restaurer l'état original du monde une fois que nous avons terminé
+
         self.world.set_state(current_state)
     
     def heuristic(self, state: WorldState) -> float:
@@ -84,91 +75,90 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
         return total_distance
 
 
+from itertools import product
+from itertools import permutations
 
 
 class CornerProblemState:
-    def __init__(self, position: Tuple[int, int], visited_corners: Set[Tuple[int, int]]):
-        self.position = position
+    def __init__(self, world_state, positions: List[Tuple[int, int]], visited_corners: Set[Tuple[int, int]]):
+        self.world_state = world_state
+        self.positions = positions  # Liste des positions des agents
         self.visited_corners = visited_corners
 
+    def get_new_state(self, new_world_state, corners):
+        new_positions = new_world_state.agents_positions
+        visited_corners = self.visited_corners.copy()
+        for position in new_positions:
+            if position in corners:
+                visited_corners.add(position)
+        return CornerProblemState(new_world_state, new_positions, visited_corners)
+
     def __eq__(self, other):
-        return isinstance(other, CornerProblemState) and self.position == other.position and self.visited_corners == other.visited_corners
+        return isinstance(other, CornerProblemState) and self.world_state == other.world_state and self.positions == other.positions and self.visited_corners == other.visited_corners
 
     def __hash__(self):
-        return hash((self.position, frozenset(self.visited_corners)))
+        return hash((self.world_state, tuple(self.positions), frozenset(self.visited_corners)))
 
 
 class CornerSearchProblem(SearchProblem[CornerProblemState]):
     def __init__(self, world: World):
         super().__init__(world)
         self.corners = [(0, 0), (0, world.width - 1), (world.height - 1, 0), (world.height - 1, world.width - 1)]
-        # Utilisation de agents_positions pour obtenir la position initiale de l'agent
-        self.initial_state = CornerProblemState(world.agents_positions[0], set())
+        self.initial_state = CornerProblemState(world.get_state(), world.agents_positions, set())
 
     def is_goal_state(self, state: CornerProblemState) -> bool:
-        return len(state.visited_corners) == 4 and state.position in self.world.exit_pos
+        # Vérifier que chaque agent est dans une sortie
+        all_in_exit = all(pos in self.world.exit_pos for pos in state.positions)
+        return len(state.visited_corners) == 4 and all_in_exit
 
-    
-    def get_successors(self, state: CornerProblemState) -> Iterable[Tuple[CornerProblemState, Tuple[Action, ...], float]]:
+    # Le reste du code est similaire
+    def get_successors(self, state: CornerProblemState) -> Iterable[Tuple[CornerProblemState, Action, float]]:
+        self.world.set_state(state.world_state)
+        
+        if self.world.done:
+            return []
+        
+        all_actions_combinations = product(*self.world.available_actions())
+        
+        for actions in all_actions_combinations:
+            self.world.set_state(state.world_state)
+            
+            cost = self.world.step(actions)  
+            new_state = self.world.get_state()
+            
+            yield (state.get_new_state(new_state, self.corners), actions, cost)
         self.nodes_expanded += 1
-
-        # Sauvegardons l'état courant du monde pour le restaurer plus tard
-        current_state = self.world.get_state()
-
-        # Convertissons le CornerProblemState en WorldState
-        other_agents_positions = self.world.agents_positions.copy()
-        other_agents_positions[0] = state.position
-        gem_status = [False] * self.world.n_gems
-        world_state = WorldState(other_agents_positions, gem_status)
-        
-        # Mettons le monde à l'état que nous examinons
-        self.world.set_state(world_state)
-
-        # Générer toutes les actions possibles pour l'agent
-        available_actions_for_agent = self.world.available_actions()[0]
-
-        visited_states = set()
-
-        for action in available_actions_for_agent:
-            # Prenez les actions pour tous les agents (supposez que les autres agents restent immobiles)
-            actions_for_all_agents = (action,) + tuple([Action.STAY for _ in range(self.world.n_agents - 1)])
-
-            if not self.world.done:
-                self.world.step(actions_for_all_agents)
-                
-                # Une fois l'action effectuée, capturez la nouvelle position de l'agent
-                new_position = self.world.agents_positions[0]
-                visited_corners = state.visited_corners.copy()
-                
-                # Si la nouvelle position est un coin, ajoutez-la aux coins visités
-                if new_position in self.corners:
-                    visited_corners.add(new_position)
-
-                # Créez un nouvel état pour ce scénario
-                new_state = CornerProblemState(new_position, visited_corners)
-                
-                if new_state not in visited_states:
-                    visited_states.add(new_state)
-                    yield (new_state, actions_for_all_agents, 1.0)
-                
-                # Restaurer le monde à l'état précédent pour tester la prochaine action
-                self.world.set_state(world_state)
-
-        # Restaurer l'état original du monde une fois que nous avons terminé
-        self.world.set_state(current_state)
-
-
-        
 
 
     def heuristic(self, problem_state: CornerProblemState) -> float:
+        # Etape 1 : Trouver la distance minimale de l'agent actuel à chaque coin non visité
         remaining_corners = [corner for corner in self.corners if corner not in problem_state.visited_corners]
         if not remaining_corners:
-            return min(self.manhattan_distance(problem_state.position, exit) for exit in self.world.exit_pos)
-        return min(self.manhattan_distance(problem_state.position, corner) for corner in remaining_corners)
+            return min(self.manhattan_distance(problem_state.positions[0], exit) for exit in self.world.exit_pos)
+        
+        min_distances_from_agent = [self.manhattan_distance(problem_state.positions[0], corner) for corner in remaining_corners]
 
-    def manhattan_distance(self,p1: Tuple[int, int], p2: Tuple[int, int]) -> int:
-        return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+        # Etape 2 : Estimation de la distance pour visiter tous les coins restants (approximation du TSP)
+        distances_between_corners = {}
+        for i, corner1 in enumerate(remaining_corners):
+            for j, corner2 in enumerate(remaining_corners):
+                if i != j:
+                    distances_between_corners[(corner1, corner2)] = self.manhattan_distance(corner1, corner2)
+
+        # Pour simplifier, prenons la distance minimale parmi les coins restants comme approximation
+        approximated_tsp_distance = sum(sorted(distances_between_corners.values())[:len(remaining_corners)-1])
+        
+        # Etape 3 : Calculer la distance du dernier coin à la sortie la plus proche
+        distances_to_exit = [min(self.manhattan_distance(corner, exit) for exit in self.world.exit_pos) for corner in remaining_corners]
+        min_distance_to_exit = min(distances_to_exit)
+
+        # Etape 4 : Somme de toutes les distances
+        return min(min_distances_from_agent) + approximated_tsp_distance + min_distance_to_exit
+
+
+        
+    def manhattan_distance(self, pos1, pos2):
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
 
 
