@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple, Iterable, Generic, TypeVar, Set, List
 from lle import World, Action, WorldState
 from itertools import product
-from math import sqrt
+
 
 T = TypeVar("T")
 
@@ -40,11 +40,7 @@ class SearchProblem(ABC, Generic[T]):
 class SimpleSearchProblem(SearchProblem[WorldState]):
 
     def is_goal_state(self, state: WorldState) -> bool:
-        # Vérifier si tous les agents sont dans une position de sortie
-        for agent_pos in state.agents_positions:
-            if agent_pos not in self.world.exit_pos:
-                return False
-        return True
+        return all(agent_pos in self.world.exit_pos for agent_pos in state.agents_positions)
 
 
     def get_successors(self, state: WorldState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
@@ -52,19 +48,16 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
         current_state = self.world.get_state()
         self.world.set_state(state)
         all_actions_combinations = product(*self.world.available_actions())
-        visited_states = set()
 
         for actions in all_actions_combinations:
             if not self.world.done:
                 self.world.step(actions)
                 new_state = self.world.get_state()
-                if new_state not in visited_states:
-                    visited_states.add(new_state)
-                    yield (new_state, actions, 1.0)  
+                yield (new_state, actions, 1.0)  
                 self.world.set_state(state)
 
-
         self.world.set_state(current_state)
+
     
     def heuristic(self, state: WorldState) -> float:
         """Manhattan distance for each agent to its goal"""
@@ -74,9 +67,6 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
             total_distance += min(distances)
         return total_distance
 
-
-from itertools import product
-from itertools import permutations
 
 
 class CornerProblemState:
