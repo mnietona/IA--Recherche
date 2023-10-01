@@ -69,7 +69,7 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
     frontier = PriorityQueue()
     frontier.push(current_state, 0)
 
-    g_values = {current_state: 0}  # Représente le coût réel g(n) depuis le début jusqu'à cet état
+    g_values = {current_state: 0}  # Coût réel g(n) depuis le début jusqu'à cet état
     path_to = {current_state: []}
 
     while not frontier.isEmpty():
@@ -84,11 +84,10 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
             if successor not in g_values or tentative_g_value < g_values[successor]:
                 g_values[successor] = tentative_g_value
                 f_value = tentative_g_value + problem.heuristic(successor)  # f(n) = g(n) + h(n)
-                frontier.push(successor, f_value)
+                frontier.update(successor, f_value)  # Update pour s'assurer que la frontière est correctement mise à jour
                 path_to[successor] = path_to[current_state] + [action]
 
     return None
-
 
 
 
