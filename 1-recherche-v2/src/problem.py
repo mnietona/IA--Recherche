@@ -92,8 +92,6 @@ class CornerProblemState:
                 visited_corners.add(position)
         return CornerProblemState(new_world_state, new_positions, visited_corners)
 
-
-
 class CornerSearchProblem(SearchProblem[CornerProblemState]):
     def __init__(self, world: World):
         super().__init__(world)
@@ -101,8 +99,9 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         self.initial_state = CornerProblemState(world.get_state(), world.agents_positions, set())
 
     def is_goal_state(self, state: CornerProblemState) -> bool:
-        all_in_exit = all(pos in self.world.exit_pos for pos in state.positions)
-        return len(state.visited_corners) == len(self.corners) and all_in_exit
+        if len(state.visited_corners) != len(self.corners):
+            return False
+        return all(pos in self.world.exit_pos for pos in state.positions)
 
     def get_successors(self, state: CornerProblemState) -> Iterable[Tuple[CornerProblemState, Action, float]]:
         self.nodes_expanded += 1
@@ -113,12 +112,11 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
 
         all_actions_combinations = product(*self.world.available_actions())
         for actions in all_actions_combinations:
-            self.world.set_state(state.world_state)
-            cost = self.world.step(actions)  + 1.0
-            new_state = self.world.get_state()
             
+            cost = self.world.step(actions) + 1.0
+            new_state = self.world.get_state()
+            self.world.set_state(state.world_state)
             yield (state.get_new_state(new_state, self.corners), actions, cost)
-
 
     def manhattan_distance(self,p1, p2):
         """Retourne la distance de Manhattan entre deux points."""
@@ -139,34 +137,41 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
 
 
 
+
 class GemProblemState:
-    def __init__(self, world_state: WorldState, gems_collected: int):
+    def __init__(self, world_state, positions: List[Tuple[int, int]], collected_gems: Set[Tuple[int, int]]):
         self.world_state = world_state
-        self.gems_collected = gems_collected
+        self.positions = positions  # Liste des positions des agents
+        self.collected_gems = collected_gems
 
     def __eq__(self, other):
-        return isinstance(other, GemProblemState) and self.world_state == other.world_state and self.gems_collected == other.gems_collected
+        return isinstance(other, GemProblemState) and self.world_state == other.world_state and self.positions == other.positions and self.collected_gems == other.collected_gems
 
     def __hash__(self):
-        return hash((self.world_state, self.gems_collected))
+        return hash((self.world_state, tuple(self.positions), frozenset(self.collected_gems)))
+
+    def get_new_state(self, new_world_state, gems):
+        new_positions = new_world_state.agents_positions
+        collected_gems = self.collected_gems.copy()
+        for position in new_positions:
+            if position in gems:
+                collected_gems.add(position)
+        return GemProblemState(new_world_state, new_positions, collected_gems)
 
 
 class GemSearchProblem(SearchProblem[GemProblemState]):
     def __init__(self, world: World):
         super().__init__(world)
-        initial_world_state = world.get_state()
-        self.initial_state = GemProblemState(initial_world_state, world.gems_collected)
+        self.initial_state = GemProblemState(world.get_state(), world.agents_positions, set())
 
     def is_goal_state(self, state: GemProblemState) -> bool:
-        # Le but est atteint lorsque toutes les gemmes sont collectées
-        # et que tous les agents sont sur la case exit.
-        all_gems_collected = state.gems_collected == self.world.n_gems
-        all_agents_on_exit = all(agent_pos in self.world.exit_pos for agent_pos in state.world_state.agents_positions)
-        return all_gems_collected and all_agents_on_exit
+        if len(state.collected_gems) != len(self.world.gems):
+            return False
+        return all(pos in self.world.exit_pos for pos in state.positions)
 
     def heuristic(self, state: GemProblemState) -> float:
-        # Le nombre de gemmes non collectées
-        return self.world.n_gems - state.gems_collected
+        """The number of uncollected gems"""
+        return len(self.world.gems) - len(state.collected_gems)
 
     def get_successors(self, state: GemProblemState) -> Iterable[Tuple[GemProblemState, Action, float]]:
         self.nodes_expanded += 1
@@ -174,12 +179,12 @@ class GemSearchProblem(SearchProblem[GemProblemState]):
         
         if self.world.done:
             return []
-
+        
         all_actions_combinations = product(*self.world.available_actions())
+        
         for actions in all_actions_combinations:
-            self.world.set_state(state.world_state)  # Restauration de l'état précédent
-            cost = self.world.step(actions)  # Coût d'effectuer ces actions
-            new_world_state = self.world.get_state()
-            new_state = GemProblemState(new_world_state, self.world.gems_collected)
             
-            yield (new_state, actions, cost)
+            cost = self.world.step(actions) + 1.0
+            new_state = self.world.get_state()
+            self.world.set_state(state.world_state)
+            yield (state.get_new_state(new_state, self.world.gems), actions, cost)

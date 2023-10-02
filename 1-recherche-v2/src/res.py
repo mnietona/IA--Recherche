@@ -26,12 +26,13 @@ if __name__ == "__main__":
     print("3 = Gems")
     choice = input("Entrez votre choix: ")
 
-    problem = select_problem(w, choice)
+    
 
     algos = [(dfs, "dfs"), (bfs, "bfs"), (astar, "astar")]
     
     print("\033c")
     for algo, name in algos:
+        problem = select_problem(w, choice)
         debut = time()
         solution = algo(problem)
         fin = time()
