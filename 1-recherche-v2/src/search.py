@@ -38,8 +38,6 @@ def bfs(problem: SearchProblem) -> Optional[Solution]:
     return None
 
 
-
-
 def dfs(problem: SearchProblem) -> Optional[Solution]:
     start_state = problem.initial_state
     frontier = [start_state]
@@ -62,8 +60,6 @@ def dfs(problem: SearchProblem) -> Optional[Solution]:
 
 
 
-
-
 def astar(problem: SearchProblem) -> Optional[Solution]:
     current_state = problem.initial_state
     frontier = PriorityQueue()
@@ -80,7 +76,7 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
 
         for successor, action, action_cost in problem.get_successors(current_state):
             tentative_g_value = g_values[current_state] + action_cost
-
+            
             if successor not in g_values or tentative_g_value < g_values[successor]:
                 g_values[successor] = tentative_g_value
                 f_value = tentative_g_value + problem.heuristic(successor)  # f(n) = g(n) + h(n)
