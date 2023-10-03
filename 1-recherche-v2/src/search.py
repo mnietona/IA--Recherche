@@ -68,9 +68,15 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
     g_values = {current_state: 0}  # Coût réel g(n) depuis le début jusqu'à cet état
     path_to = {current_state: []}
 
+    closed_set = set()
+
     while not frontier.isEmpty():
         current_state = frontier.pop()
 
+        if current_state in closed_set:
+            continue
+
+        closed_set.add(current_state)
         if problem.is_goal_state(current_state):
             return Solution(actions=path_to[current_state])
 
@@ -84,6 +90,4 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
                 path_to[successor] = path_to[current_state] + [action]
 
     return None
-
-
 

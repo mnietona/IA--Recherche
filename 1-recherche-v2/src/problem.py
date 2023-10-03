@@ -134,57 +134,51 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
                 max_distance = max(max_distance, max(distances))
         return max_distance
 
-
-
-
-
 class GemProblemState:
-    def __init__(self, world_state, positions: List[Tuple[int, int]], collected_gems: Set[Tuple[int, int]]):
+    def __init__(self, world_state: WorldState, gems_collected: Set[Tuple[int, int]]):
         self.world_state = world_state
-        self.positions = positions  # Liste des positions des agents
-        self.collected_gems = collected_gems
+        self.gems_collected = gems_collected
 
     def __eq__(self, other):
-        return isinstance(other, GemProblemState) and self.world_state == other.world_state and self.positions == other.positions and self.collected_gems == other.collected_gems
+        return isinstance(other, GemProblemState) and self.world_state == other.world_state and self.gems_collected == other.gems_collected
 
     def __hash__(self):
-        return hash((self.world_state, tuple(self.positions), frozenset(self.collected_gems)))
+        return hash((self.world_state, frozenset(self.gems_collected)))
 
-    def get_new_state(self, new_world_state, gems):
-        new_positions = new_world_state.agents_positions
-        collected_gems = self.collected_gems.copy()
-        for position in new_positions:
-            if position in gems:
-                collected_gems.add(position)
-        return GemProblemState(new_world_state, new_positions, collected_gems)
-
+    def get_new_state(self, new_world_state: WorldState, gems: List[Tuple[int, int]]):
+        new_gems_collected = self.gems_collected.copy()
+        for position, _ in gems:
+            if position in new_world_state.agents_positions:
+                new_gems_collected.add(position)
+        return GemProblemState(new_world_state, new_gems_collected)
 
 class GemSearchProblem(SearchProblem[GemProblemState]):
     def __init__(self, world: World):
         super().__init__(world)
-        self.initial_state = GemProblemState(world.get_state(), world.agents_positions, set())
+        self.initial_state = GemProblemState(world.get_state(), set())
 
     def is_goal_state(self, state: GemProblemState) -> bool:
-        if len(state.collected_gems) != len(self.world.gems):
-            return False
-        return all(pos in self.world.exit_pos for pos in state.positions)
+        return len(state.gems_collected) == self.world.n_gems
 
-    def heuristic(self, state: GemProblemState) -> float:
-        """The number of uncollected gems"""
-        return len(self.world.gems) - len(state.collected_gems)
-
-    def get_successors(self, state: GemProblemState) -> Iterable[Tuple[GemProblemState, Action, float]]:
+    def get_successors(self, state: GemProblemState) -> Iterable[Tuple[GemProblemState, Tuple[Action, ...], float]]:
         self.nodes_expanded += 1
         self.world.set_state(state.world_state)
         
         if self.world.done:
             return []
-        
+
         all_actions_combinations = product(*self.world.available_actions())
-        
         for actions in all_actions_combinations:
-            
-            cost = self.world.step(actions) + 1.0
+            self.world.step(actions)
             new_state = self.world.get_state()
             self.world.set_state(state.world_state)
+            cost = 1.0  # à ajuster si nécessaire
             yield (state.get_new_state(new_state, self.world.gems), actions, cost)
+
+    def heuristic(self, problem_state: GemProblemState) -> float:
+        uncollected_gems = [gem[0] for gem in self.world.gems if gem[0] not in problem_state.gems_collected]
+        total_distance = 0
+        for agent_pos in problem_state.world_state.agents_positions:
+            distances = [abs(agent_pos[0] - gem[0]) + abs(agent_pos[1] - gem[1]) for gem in uncollected_gems]
+            total_distance += min(distances) if distances else 0
+        return total_distance + len(uncollected_gems)
