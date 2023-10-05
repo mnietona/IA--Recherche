@@ -3,14 +3,14 @@ from lle import World
 from problem import SimpleSearchProblem, CornerSearchProblem, GemSearchProblem
 import search
 
-w = World.from_file("cartes/gems")
+w = World.from_file("level5")
 
 #problem = SimpleSearchProblem(w)
 #problem = CornerSearchProblem(w)
-problem = GemSearchProblem(w)
+#problem = GemSearchProblem(w)
 #solution = search.bfs(problem)
 #solution = search.dfs(problem)
-solution = search.astar(problem)
+#solution = search.astar(problem)
 
 
 if solution is None:

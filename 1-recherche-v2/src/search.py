@@ -20,7 +20,7 @@ class Solution:
 def bfs(problem: SearchProblem) -> Optional[Solution]:
     start_state = problem.initial_state
     frontier = deque([start_state])
-    explored = set([start_state])  # commencer avec l'état initial
+    explored = set([start_state]) 
     path_to = {start_state: []}
 
     while frontier:
@@ -41,7 +41,7 @@ def bfs(problem: SearchProblem) -> Optional[Solution]:
 def dfs(problem: SearchProblem) -> Optional[Solution]:
     start_state = problem.initial_state
     frontier = [start_state]
-    explored = set([start_state])  # Commencez avec l'état initial
+    explored = set([start_state]) 
     path_to = {start_state: []}
 
     while frontier:
@@ -77,6 +77,7 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
             continue
 
         closed_set.add(current_state)
+        
         if problem.is_goal_state(current_state):
             return Solution(actions=path_to[current_state])
 
@@ -86,7 +87,7 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
             if successor not in g_values or tentative_g_value < g_values[successor]:
                 g_values[successor] = tentative_g_value
                 f_value = tentative_g_value + problem.heuristic(successor)  # f(n) = g(n) + h(n)
-                frontier.update(successor, f_value)  # Update pour s'assurer que la frontière est correctement mise à jour
+                frontier.update(successor, f_value)  
                 path_to[successor] = path_to[current_state] + [action]
 
     return None

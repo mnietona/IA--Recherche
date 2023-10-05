@@ -70,7 +70,6 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
             total_distance += min(distances)
         return total_distance
 
-
 class CornerProblemState:
     def __init__(self, world_state, positions: List[Tuple[int, int]], visited_corners: Set[Tuple[int, int]]):
         self.world_state = world_state
@@ -113,23 +112,20 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         all_actions_combinations = product(*self.world.available_actions())
         for actions in all_actions_combinations:
             
-            cost = self.world.step(actions) + 1.0
+            self.world.step(actions)
             new_state = self.world.get_state()
             self.world.set_state(state.world_state)
+            cost =  1.0
+            
             yield (state.get_new_state(new_state, self.corners), actions, cost)
-
-    def manhattan_distance(self,p1, p2):
-        """Retourne la distance de Manhattan entre deux points."""
-        return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
     def heuristic(self, problem_state: CornerProblemState) -> float:
         unvisited_corners = set(self.corners) - problem_state.visited_corners
         if not unvisited_corners:
             return 0
-        
-        max_distance = -float('inf')
+        max_distance = - float('inf') 
         for agent_position in problem_state.positions:
-            distances = [self.manhattan_distance(agent_position, corner) for corner in unvisited_corners]
+            distances =  [abs(agent_position[0] - corner[0]) + abs(agent_position[1] - corner[1]) for corner in unvisited_corners]
             if distances:
                 max_distance = max(max_distance, max(distances))
         return max_distance
@@ -158,7 +154,9 @@ class GemSearchProblem(SearchProblem[GemProblemState]):
         self.initial_state = GemProblemState(world.get_state(), set())
 
     def is_goal_state(self, state: GemProblemState) -> bool:
-        return len(state.gems_collected) == self.world.n_gems
+        if len(state.gems_collected) != len(self.world.gems):
+            return False
+        return all(pos in self.world.exit_pos for pos in state.world_state.agents_positions)
 
     def get_successors(self, state: GemProblemState) -> Iterable[Tuple[GemProblemState, Tuple[Action, ...], float]]:
         self.nodes_expanded += 1
@@ -168,17 +166,33 @@ class GemSearchProblem(SearchProblem[GemProblemState]):
             return []
 
         all_actions_combinations = product(*self.world.available_actions())
+        
         for actions in all_actions_combinations:
+            
             self.world.step(actions)
             new_state = self.world.get_state()
             self.world.set_state(state.world_state)
-            cost = 1.0  # à ajuster si nécessaire
+            cost = 1.0  
+            
             yield (state.get_new_state(new_state, self.world.gems), actions, cost)
 
     def heuristic(self, problem_state: GemProblemState) -> float:
         uncollected_gems = [gem[0] for gem in self.world.gems if gem[0] not in problem_state.gems_collected]
         total_distance = 0
+
         for agent_pos in problem_state.world_state.agents_positions:
-            distances = [abs(agent_pos[0] - gem[0]) + abs(agent_pos[1] - gem[1]) for gem in uncollected_gems]
-            total_distance += min(distances) if distances else 0
-        return total_distance + len(uncollected_gems)
+            gem_distances = [abs(agent_pos[0] - gem[0]) + abs(agent_pos[1] - gem[1]) for gem in uncollected_gems]
+            total_distance += min(gem_distances) if gem_distances else 0
+
+        if len(uncollected_gems) == 0:
+            for agent_pos in problem_state.world_state.agents_positions:
+                exit_distances = [abs(agent_pos[0] - exit_pos[0]) + abs(agent_pos[1] - exit_pos[1]) for exit_pos in self.world.exit_pos]
+                total_distance += min(exit_distances) if exit_distances else 0
+        else:
+            for gem in uncollected_gems:
+                exit_distances = [abs(gem[0] - exit_pos[0]) + abs(gem[1] - exit_pos[1]) for exit_pos in self.world.exit_pos]
+                total_distance += min(exit_distances) if exit_distances else 0
+
+        return total_distance
+
+
