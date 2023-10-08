@@ -26,8 +26,8 @@ L'environnement de projet "Laser Learning Environment" est décrit comme suit :
 - `src/`: Le répertoire source contient toutes les implémentations des classes de problème et des algorithmes de recherche.
 - `tests/`: Les tests unitaires pour les classes de problème et les algorithmes de recherche.
 - `lle/`: Le code source de l'environnement "Laser Learning Environment".
-- `main.py`: Un script pour exécuter les algorithmes de recherche sur les problèmes spécifiques.
-- `res.py`: Un script pour générer des statistiques sur les performances des algorithmes.
+- `src/main.py`: Un script pour exécuter les algorithmes de recherche sur les problèmes spécifiques.
+- `src/res.py`: Un script pour générer des statistiques sur les performances des algorithmes.
 
 ## Utilisation
 Pour exécuter le projet, ouvrez un terminal dans le répertoire du projet et utilisez les commandes suivantes :
@@ -36,7 +36,7 @@ Pour exécuter le projet, ouvrez un terminal dans le répertoire du projet et ut
   ```shell
   poetry shell
   poetry install
-  python3 src/main.py
+  python3 src/main.py {simple,corner,gem} {bfs,dfs,astar} # chosir un probleme et un algo
   ```
 
 - Pour exécuter les tests unitaires:
