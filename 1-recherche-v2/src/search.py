@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 from lle import Action
-
 from problem import SearchProblem
+
 from collections import deque
 from priority_queue import PriorityQueue
 
@@ -15,85 +15,81 @@ class Solution:
     def n_steps(self) -> int:
         return len(self.actions)
 
-    ...
 
 def bfs(problem: SearchProblem) -> Optional[Solution]:
-    frontier = deque([problem.initial_state])
-    explored = set()
-    path = {}
+    """ Recherche en largeur (Breadth-First Search) """
+    
+    start_state = problem.initial_state
+    frontier = deque([start_state]) 
+    explored = set([start_state]) 
+    path_to = {start_state: []} # Dictionnaire pour mémoriser le chemin vers chaque état
 
     while frontier:
-        current_state = frontier.popleft()
-        if problem.is_goal_state(current_state):
-            actions = []
-            while current_state in path:
-                action, parent_state = path[current_state]
-                actions.append(action)
-                current_state = parent_state
-            actions.reverse()
-            return Solution(actions)
+        current_state = frontier.popleft() # On récupère le premier état de la file
 
-        explored.add(current_state)
-        for successor, action, _ in problem.get_successors(current_state):
-            if successor not in explored and successor not in frontier:
+        if problem.is_goal_state(current_state):
+            return Solution(actions=path_to[current_state])
+
+        for successor, actions, _ in problem.get_successors(current_state):
+            if successor not in explored:
+                explored.add(successor)
                 frontier.append(successor)
-                path[successor] = (action, current_state)
+                path_to[successor] = path_to[current_state] + [actions]
 
     return None
 
 
 def dfs(problem: SearchProblem) -> Optional[Solution]:
-    frontier = [problem.initial_state]
-    explored = set()
-    path = {}
+    """ Recherche en profondeur (Depth-First Search) """
+    
+    start_state = problem.initial_state
+    frontier = [start_state] 
+    explored = set([start_state])
+    path_to = {start_state: []} # Dictionnaire pour mémoriser le chemin vers chaque état
 
     while frontier:
-        current_state = frontier.pop()
-        if problem.is_goal_state(current_state):
-            actions = []
-            while current_state in path:
-                action, parent_state = path[current_state]
-                actions.append(action)
-                current_state = parent_state
-            actions.reverse()
-            return Solution(actions)
+        current_state = frontier.pop() # On utilise pop() pour prendre le dernier élément de la liste
 
-        explored.add(current_state)
-        for successor, action, _ in problem.get_successors(current_state):
-            if successor not in explored and successor not in frontier:
-                frontier.append(successor)
-                path[successor] = (action, current_state)
+        if problem.is_goal_state(current_state):
+            return Solution(actions=path_to[current_state])
+
+        for successor, actions, _ in problem.get_successors(current_state):
+            if successor not in explored:
+                explored.add(successor)
+                frontier.append(successor) 
+                path_to[successor] = path_to[current_state] + [actions]
 
     return None
 
 
-
 def astar(problem: SearchProblem) -> Optional[Solution]:
-    """ A* search, using the Manhattan distance heuristic """
+    """ Recherche A* """
+    
+    current_state = problem.initial_state
     frontier = PriorityQueue()
-    frontier.push(problem.initial_state, 0)
-    
-    path = {}
-    cost_so_far = {problem.initial_state: 0}
-    
+    frontier.push(current_state, problem.heuristic(current_state)) # On ajoute l'état initial à la file
+    g_values = {current_state: 0} # g(n)
+    path_to = {current_state: []} # Dictionnaire pour mémoriser le chemin vers chaque état
+    explored = set()  
+
     while not frontier.isEmpty():
         current_state = frontier.pop()
-        
+
+        if current_state in explored: continue
+
+        explored.add(current_state) 
+
         if problem.is_goal_state(current_state):
-            actions = []
-            while current_state in path:
-                action, parent_state = path[current_state]
-                actions.append(action)
-                current_state = parent_state
-            actions.reverse()
-            return Solution(actions)
-        
-        for successor, action, cost in problem.get_successors(current_state):
-            new_cost = cost_so_far[current_state] + cost
-            if successor not in cost_so_far or new_cost < cost_so_far[successor]:
-                cost_so_far[successor] = new_cost
-                priority = new_cost + problem.heuristic(successor)
-                frontier.push(successor, priority)
-                path[successor] = (action, current_state)
-    
+            return Solution(actions=path_to[current_state])
+
+        for successor, action, action_cost in problem.get_successors(current_state):
+            tentative_g_value = g_values[current_state] + action_cost # On calcule le coût du chemin jusqu'à l'état successeur
+
+            if successor not in g_values or tentative_g_value < g_values[successor]:
+                g_values[successor] = tentative_g_value # On met à jour le coût du chemin jusqu'à l'état successeur
+                f_value = tentative_g_value + problem.heuristic(successor) # On calcule la valeur de f(n) = g(n) + h(n)
+                if successor not in explored:
+                    frontier.update(successor, f_value)
+                path_to[successor] = path_to[current_state] + [action]
+
     return None

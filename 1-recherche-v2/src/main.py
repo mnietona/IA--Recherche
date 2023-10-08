@@ -1,19 +1,21 @@
 import cv2
 from lle import World
-from problem import SimpleSearchProblem, CornerSearchProblem
+from problem import SimpleSearchProblem, CornerSearchProblem, GemSearchProblem
 import search
-liste_carte = ["cartes/1_agent/vide","cartes/1_agent/zigzag",
-               "cartes/1_agent/impossible","cartes/2_agents/vide",
-               "cartes/2_agents/zigzag","cartes/2_agents/impossible",
-               "level3", "level4", "level5", "level6", "cartes/corners","cartes/gems"]
+from time import time
 
-w = World.from_file(liste_carte[6])
+w = World.from_file("cartes/gems")
 
-problem = SimpleSearchProblem(w)
+#problem = SimpleSearchProblem(w)
 #problem = CornerSearchProblem(w)
-solution = search.bfs(problem)
+problem = GemSearchProblem(w)
+debut = time()
+#solution = search.bfs(problem)
 #solution = search.dfs(problem)
-#solution = search.astar(problem)
+solution = search.astar(problem)
+fin = time()
+print(f"Temps d'exécution : {fin - debut} secondes")
+
 
 if solution is None:
     print("No solution found")
