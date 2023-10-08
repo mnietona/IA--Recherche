@@ -2,15 +2,19 @@ import cv2
 from lle import World
 from problem import SimpleSearchProblem, CornerSearchProblem, GemSearchProblem
 import search
+from time import time
 
-w = World.from_file("level5")
+w = World.from_file("cartes/gems")
 
 #problem = SimpleSearchProblem(w)
 #problem = CornerSearchProblem(w)
-#problem = GemSearchProblem(w)
+problem = GemSearchProblem(w)
+debut = time()
 #solution = search.bfs(problem)
 #solution = search.dfs(problem)
-#solution = search.astar(problem)
+solution = search.astar(problem)
+fin = time()
+print(f"Temps d'exécution : {fin - debut} secondes")
 
 
 if solution is None:

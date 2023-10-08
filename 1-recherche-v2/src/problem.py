@@ -70,6 +70,7 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
             total_distance += min(distances)
         return total_distance
 
+
 class CornerProblemState:
     def __init__(self, world_state, positions: List[Tuple[int, int]], visited_corners: Set[Tuple[int, int]]):
         self.world_state = world_state
@@ -86,8 +87,10 @@ class CornerProblemState:
     def get_new_state(self, new_world_state, corners):
         new_positions = new_world_state.agents_positions
         visited_corners = self.visited_corners.copy()
+
+        # Vérification si les nouvelles positions sont dans les coins avant de copier
         for position in new_positions:
-            if position in corners:
+            if position in corners and position not in visited_corners:
                 visited_corners.add(position)
         return CornerProblemState(new_world_state, new_positions, visited_corners)
 
@@ -130,6 +133,7 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
                 max_distance = max(max_distance, max(distances))
         return max_distance
 
+
 class GemProblemState:
     def __init__(self, world_state: WorldState, gems_collected: Set[Tuple[int, int]]):
         self.world_state = world_state
@@ -144,7 +148,7 @@ class GemProblemState:
     def get_new_state(self, new_world_state: WorldState, gems: List[Tuple[int, int]]):
         new_gems_collected = self.gems_collected.copy()
         for position, _ in gems:
-            if position in new_world_state.agents_positions:
+            if position in new_world_state.agents_positions and position not in new_gems_collected:
                 new_gems_collected.add(position)
         return GemProblemState(new_world_state, new_gems_collected)
 
@@ -176,6 +180,7 @@ class GemSearchProblem(SearchProblem[GemProblemState]):
             
             yield (state.get_new_state(new_state, self.world.gems), actions, cost)
 
+   
     def heuristic(self, problem_state: GemProblemState) -> float:
         uncollected_gems = [gem[0] for gem in self.world.gems if gem[0] not in problem_state.gems_collected]
         total_distance = 0
@@ -194,5 +199,8 @@ class GemSearchProblem(SearchProblem[GemProblemState]):
                 total_distance += min(exit_distances) if exit_distances else 0
 
         return total_distance
+    
+
+
 
 
